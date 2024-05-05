@@ -40,6 +40,8 @@ const PersonForm = ({
   userNameInput,
   userNumberInput,
   personAdded,
+  inputLengthError,
+  setInputLengthError,
 }) => {
   return (
     <>
@@ -96,6 +98,15 @@ const PersonForm = ({
               <tbody>
                 <tr>
                   <th className="tableRow">{`${newName} was Added XD`}</th>
+                </tr>
+              </tbody>
+            </table>
+          )}
+          {inputLengthError.boolean && (
+            <table>
+              <tbody>
+                <tr>
+                  <th className="tableRow">{`${inputLengthError.errorMsg}`}</th>
                 </tr>
               </tbody>
             </table>
@@ -158,7 +169,7 @@ const App = () => {
   const [searchText, setSearchText] = useState("");
   const [personAdded, setPersonAdded] = useState(false);
   const [error, setError] = useState({ boolean: false, name: "" });
-  console.log(error.name);
+  const [inputLengthError, setInputLengthError] = useState({ boolean: false, errorMsg: "" });
 
   const getPersonList = () => {
     personServices.getPersons().then((res) => setPersons(res));
@@ -190,32 +201,38 @@ const App = () => {
     if (newPersonObject.name === "" || newPersonObject.number === "") {
       alert("You think im dumb? WRITE SOMETHING!!??!");
     } else if (!nameExists) {
-      personServices.create(newPersonObject).then((res) => {
-        setPersons(persons.concat(res));
-      });
+      personServices
+        .create(newPersonObject)
+        .then((res) => {
+          setPersons(persons.concat(res));
+          setInputLengthError({ boolean: false, errorMsg: "" });
+          setTimeout(() => {
+            setPersonAdded(true);
+            setTimeout(() => {
+              setNewName("");
+              setNewNumber("");
+              setPersonAdded(false);
+            }, 2000);
+          }, 0);
+        })
+        .catch((error) => {
+          console.log(error.response.data.message);
+          setInputLengthError({ boolean: true, errorMsg: error.response.data.message });
+        });
     } else {
       if (window.confirm(`Hey man, not cool, unless you wanna change youre phone number...?`)) {
-        const url = "http://localhost:3001/persons/";
+        const url = "http://localhost:3001/api/persons/";
         const personCopy = persons.find((p) => p.name == newName);
         const changedNumber = { ...personCopy, number: newNumber };
-        axios.put(url + personCopy.id, changedNumber).then((res) => getPersonList());
+        personServices.editEntry(personCopy.id, changedNumber).then((res) => getPersonList());
       }
     }
-    setTimeout(() => {
-      setPersonAdded(true);
-      setTimeout(() => {
-        setNewName("");
-        setPersonAdded(false);
-      }, 2000);
-    }, 0);
-
-    setNewNumber("");
   };
   const deleteEntry = (e, person) => {
     e.preventDefault();
     if (window.confirm(`Are you sure you want to yeet ${person.name} off your contact list?`)) {
-      axios
-        .delete(`http://localhost:3001/persons/${person.id}`)
+      personServices
+        .deletion(person.id)
         .then((res) => getPersonList())
         .catch((e) => {
           if (e.response.status == 404) {
@@ -249,6 +266,8 @@ const App = () => {
         userNumberInput={userNumberInput}
         userInputSubmit={userInputSubmit}
         personAdded={personAdded}
+        inputLengthError={inputLengthError}
+        setInputLengthError={setInputLengthError}
       />
       <Persons
         persons={persons}

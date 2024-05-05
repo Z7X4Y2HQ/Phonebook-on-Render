@@ -9,4 +9,12 @@ const create = (personObject) => {
   return axios.post(baseURL, personObject).then((res) => res.data);
 };
 
-export default { getPersons, create };
+const deletion = (id) => {
+  return axios.delete(baseURL + id);
+};
+
+const editEntry = (id, changedEntryObject) => {
+  return axios.put(baseURL + id, changedEntryObject);
+};
+
+export default { getPersons, create, deletion, editEntry };
